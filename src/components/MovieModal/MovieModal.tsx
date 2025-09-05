@@ -43,7 +43,7 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
     toast.error('Failed to load movie image', {
       id: 'movie-image-error',
       duration: 4000,
-      position: 'top-center', // показуємо поверх модалки
+      position: 'top-center',
       style: {
         background: '#ff4d4f',
         color: '#fff',
@@ -57,7 +57,6 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
 
   return createPortal(
     <div className={styles.backdrop} onClick={handleBackdropClick} role="dialog" aria-modal="true">
-      {/* Локальний Toaster всередині модалки */}
       <Toaster containerStyle={{ position: 'absolute', width: '100%' }} />
 
       <div className={styles.modal}>
@@ -67,8 +66,10 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
 
         {!imageLoaded && !imageError && <Loader />}
 
-        {!imageError && (
+        {/* Рендеримо зображення тільки якщо бекенд повернув шлях */}
+        {!imageError && movie.backdrop_path && (
           <img
+            key={movie.id} // примушує перевантаження при новому фільмі
             className={styles.image}
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
             alt={movie.title}
