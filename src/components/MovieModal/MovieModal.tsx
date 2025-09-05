@@ -10,13 +10,21 @@ interface MovieModalProps {
   onClose: () => void;
 }
 
+// Константа для id тоста — використовуємо всюди ту саму
+const IMAGE_ERROR_TOAST_ID = 'movie-image-error';
+
 const MovieModal = ({ movie, onClose }: MovieModalProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // handleClose обгорнутий у useCallback — стабільна функція
   const handleClose = useCallback(() => {
+    // явно прибираємо toast (якщо він був показаний)
+    toast.dismiss(IMAGE_ERROR_TOAST_ID); // можна використовувати toast.dismiss() щоб закрити всі тости
+    // скидаємо локальні стани
     setImageLoaded(false);
     setImageError(false);
+    // викликаємо батьківську функцію закриття
     onClose();
   }, [onClose]);
 
@@ -31,6 +39,8 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
     return () => {
       document.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = 'auto';
+      // Додатковий захист: при анмаунті модалки прибираємо тост
+      toast.dismiss(IMAGE_ERROR_TOAST_ID);
     };
   }, [handleClose]);
 
@@ -40,15 +50,17 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
 
   const handleImageError = () => {
     setImageError(true);
+
+    // показуємо тост з фіксованим id — потім ми його зможемо однозначно прибрати
     toast.error('Failed to load movie image', {
-      id: 'movie-image-error',
+      id: IMAGE_ERROR_TOAST_ID,
       duration: 4000,
       position: 'top-center',
       style: {
         background: '#ff4d4f',
         color: '#fff',
-        fontWeight: 'bold',
-        padding: '12px 20px',
+        fontWeight: '600',
+        padding: '10px 16px',
         borderRadius: '8px',
         zIndex: 10000,
       },
@@ -57,7 +69,10 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
 
   return createPortal(
     <div className={styles.backdrop} onClick={handleBackdropClick} role="dialog" aria-modal="true">
-      <Toaster containerStyle={{ position: 'absolute', width: '100%' }} />
+      {/* Локальний Toaster всередині модалки — позиціювання робимо через containerStyle */}
+      <Toaster
+        containerStyle={{ position: 'absolute', width: '100%', top: 10, left: 0, zIndex: 10001 }}
+      />
 
       <div className={styles.modal}>
         <button className={styles.closeButton} aria-label="Close modal" onClick={handleClose}>
@@ -66,10 +81,8 @@ const MovieModal = ({ movie, onClose }: MovieModalProps) => {
 
         {!imageLoaded && !imageError && <Loader />}
 
-        {/* Рендеримо зображення тільки якщо бекенд повернув шлях */}
-        {!imageError && movie.backdrop_path && (
+        {!imageError && (
           <img
-            key={movie.id} // примушує перевантаження при новому фільмі
             className={styles.image}
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
             alt={movie.title}
